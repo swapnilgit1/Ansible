@@ -1,0 +1,68 @@
+
+#apache2.yml
+
+---
+  - name: installing tomcat9 
+    apt:                             
+     name: apache2
+     state: present
+    
+
+>define only tasks in indivual tml files.
+
+#jdk.yml
+---
+  - name: installing jdk 
+    apt: 
+     name: java-1.8.0-openjdk
+     state: present 
+    when: ansible_os_family=="*Debian*"  #ansible_os_family": "Debian"
+
+
+
+
+
+---
+  - name: blocks 
+    hosts: server1 
+    gather_facts: yes
+    become: yes
+    tasks: 
+     - import_tasks: apache2.yml 
+       when: ansible_os_family=="*Debian*"
+
+     - import_tasks: jdk.yml 
+       when: ansible_os_family=="*Debian*"  
+
+
+
+all import* statements are pre-processed at the time when playbook is parsed.
+all include* statements are processed as they encountered during the execution of the playbook.
+
+import_* is static and include is dynamic
+include_* allow the dynamic input and data fetching
+
+
+ansible has following import and include modules _ 
+>import_playbook, import_tasks, import_vars, import_role
+>include_playbook, include_tasks, include_vars, include_role
+
+>var_Debian.yml
+---
+  pkg: apache2 
+
+
+>var_RedHat.yml
+---
+  pkg: httpd
+
+
+>var_demo.yml
+---
+- name: include vars  #import will not work, as it is dynamic
+  hosts: server1 
+  gather_facts: true
+  tasks: 
+   - include_vars: var_{{ansible_os_family}}  #get replaced with , var_Debian and then parse the var from that file
+   - debug: 
+        msg: "pkg name={{pkg}}"

@@ -1,0 +1,215 @@
+---
+>
+*all_module_ref_  https://docs.ansible.com/ansible/2.9/modules/list_of_all_modules.html
+
+
+>user_module_to_create_ssh_keys_
+
+---
+- name: Create a 2048-bit SSH key for user jsmith in ~jsmith/.ssh/id_rsa
+  ansible.builtin.user:
+    name: jsmith
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+
+
+---
+- name: Add the user 'james' with a bash shell, appending the group 'admins' and 'developers' to the user's groups
+  ansible.builtin.user:
+    name: james
+    shell: /bin/bash
+    groups: admins,developers
+    append: yes
+
+---
+>    
+>------------------------------------------------
+
+>reboot module to reboot the servers
+
+- name: Unconditionally reboot the machine with all defaults
+  ansible.builtin.reboot:
+
+- name: Reboot a slow machine that might have lots of updates to apply
+  ansible.builtin.reboot:
+    reboot_timeout: 3600
+
+- name: Reboot a machine with shutdown command in unusual place
+  ansible.builtin.reboot:
+    search_paths:
+     - '/lib/molly-guard'
+
+- name: Reboot machine using a custom reboot command
+  ansible.builtin.reboot:
+    reboot_command: launchctl reboot userspace
+    boot_time_command: uptime | cut -d ' ' -f 5
+
+
+---
+>    
+>------------------------------------------------
+
+>shutting down the nodes_
+
+- name: Unconditionally shut down the machine with all defaults
+  community.general.shutdown:
+
+- name: Delay shutting down the remote node
+  community.general.shutdown:
+    delay: 60
+
+- name: Shut down a machine with shutdown command in unusual place
+  community.general.shutdown:
+    search_paths:
+     - '/lib/molly-guard'
+
+---
+>    
+>------------------------------------------------
+
+>Ansible docker module_
+
+- name: Re-create a redis container
+  docker_container:
+    name: myredis
+    image: redis
+    command: redis-server --appendonly yes
+    state: present
+    recreate: yes
+    exposed_ports:
+      - 6379
+    volumes_from:
+      - mydata
+
+
+- name: Tag and push to docker hub
+  docker_image:
+    name: pacur/centos-7:56
+    repository: dcoppenhagan/myimage:7.56
+    push: yes
+    source: local
+
+---
+>    
+>------------------------------------------------
+>Ansible kubernetes module_
+
+*NameSpace
+- name: Create a k8s namespace
+  k8s:
+    state: present 
+    defination:
+      name: testing
+      api_version: v1
+      kind: Namespace
+      state: present
+
+
+*service
+- name: Create a Service object from an inline definition
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: web
+        namespace: testing
+        labels:
+          app: galaxy
+          service: web
+      spec:
+        selector:
+          app: galaxy
+          service: web
+        ports:
+        - protocol: TCP
+          targetPort: 8000
+          name: port-8000-tcp
+          port: 8000
+
+---
+>    
+>------------------------------------------------
+>   
+*ref_https://digitalvarys.com/install-kubernetes-cluster-with-kubeadm-and-ansible-ubuntu/
+*ref_https://buildvirtual.net/deploy-a-kubernetes-cluster-using-ansible/  
+
+#VISUDO user for ansible setup using ansible_
+
+>1. logging to remote node as root user using password
+
+[masters]
+master ansible_host=172.31.117.172 ansible_user=root
+
+[workers]
+worker1 ansible_host=172.31.120.66 ansible_user=root
+worker2 ansible_host=172.31.118.25 ansible_user=root
+
+
+>2.setting non-root-user.yml
+
+---
+- hosts: web_1
+  become: yes
+  tasks:
+    - name: creating 'ubuntu' user
+      user: 
+        name: ubuntu 
+        append: yes 
+        state: present 
+        createhome: yes 
+        shell: /bin/bash
+
+    - name: ubuntu for passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        line: 'ubuntu ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+
+    - name: authorized keys for the ubuntu user
+      authorized_key: 
+        user: ubuntu 
+        key: "{{item}}"
+      with_file:
+        - ~/.ssh/id_rsa.pub
+---
+>------------------------------------------------
+
+>generate csv report for aws ec2
+
+we need a ec2 asa master node with role attached for full ec2 access
+
+- name: generate csv file for aws ec2
+  hosts: localhost 
+  connection: local
+  tasks: 
+  - name: ec2 info 
+    ec2_instance_facts: 
+      region: ap-south-1
+      filters: 
+        "tags:Env": test          # info only for ec2 with Env = test tag will be collected
+      register: out               # use this varibale in a loop
+
+  - name: displaying the fetched info of ec2 
+    template: 
+      src: generate_csv.j2   
+      dest: ec2_details.csv
+
+
+
+
+>generate_csv.j2 _
+
+{% set s_no = 1 %}                    # varibale
+S.NO,INSTANCE-ID,IMAGE-ID,KEY-NAME    
+{% for each in out.instances %}       # loop , it use out variable declared in playbook, instances is feild in output
+{{ s_no }},{{ each.instance_id }},{{ each.image_id }},{{ each.key_name}}     # expression
+{% set s_no = s_no + 1 %}
+{% endfor %}
+
+>-------------------------------------------------------------------------------------------------------------
+
+
+

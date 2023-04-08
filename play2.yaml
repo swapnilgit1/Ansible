@@ -1,0 +1,24 @@
+---
+- name: sample playbook-2
+  become: yes
+  hosts: webservers, databaseservers, nfsserver
+  tasks: 
+  -   name: task2
+      command: 
+      
+  -   name: task3 
+      command: 
+
+- name: sample play
+  become: yes 
+  hosts: webservers 
+  tasks: 
+  -   name: task1 
+      command: 
+
+  -   name: task3
+      service: jenkins 
+      state: started 
+
+
+#ansible-playbook play2.yaml -i <inventoryfile.yaml>

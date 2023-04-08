@@ -1,0 +1,46 @@
+---
+- name: install tomcat and configure
+  hosts: main 
+  gather_facts: true
+  become: true
+  vars: 
+    req_java: java-1.8.0-openjdk-amd64
+    set_java: java-1.8.0-openjdk-amd64
+    tomcat_url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.69/bin/apache-tomcat-9.0.69.tar.gz
+  tasks: 
+    - name: updating repos 
+      apt: 
+        name: "*"
+        state: latest 
+
+    - name: installing java 
+      apt: 
+        name: "{{req_java}}"
+        state: present 
+
+    - name: setting default java 
+      alternatives: 
+        name: java 
+        link: /usr/bin/java 
+        path: /usr/lib/jvm/"{{set_java}}"/bin/java 
+
+    - name: downloading tomcat jar 
+      get_url: 
+        url: "{{tomcat_url}}"
+        dest: /home/swapnil
+
+    - name: untar the tomcat.tar 
+      unarchieve: 
+        src: /home/swapnil/apache-tomcat-9.0.69.tar.gz
+        dest: /home/swapnil
+        remote_src: yes 
+
+    - name: renaming the tomcat 
+      command: mv /home/swapnil/apache-tomcat-9.0.69  /home/swapnil/tomcat9 
+
+    - name: running tomcat 
+      shell: nohup /home/swapnil/startup.sh &   #run without closing (nohup) , in background (&)
+
+      
+
+

@@ -1,0 +1,38 @@
+---
+- name: comparision opearator
+  hosts: server1 
+  gather_facts: no
+  vars: 
+    x: 455
+    y: 325
+  tasks:
+  - debug: 
+      msg: 
+      - "x == y : {{x == y}}"  
+      - "x != y : {{ x!=y }}"
+      - "x < y : {{x < y}}"         #o/p as true or false, as per comparision
+      - "x > y : {{x > y}}"
+      - "x <= y : {{x <= y}}"
+      - "x >= y : {{x >= y}}"
+
+
+
+---
+- name: comparision opearator
+  hosts: server1 
+  gather_facts: no
+  tasks:
+  - debug: 
+      msg: 
+      - "x == y : {{x == y}}"  
+      - "x != y : {{ x!=y }}"
+      - "x < y : {{x < y}}"
+      - "x > y : {{x > y}}"
+      - "x <= y : {{x <= y}}"
+      - "x >= y : {{x >= y}}
+
+>ansible-playbook play9.yml -e "x=43 y=45"
+          
+
+               
+                    

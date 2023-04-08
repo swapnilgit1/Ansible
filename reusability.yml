@@ -1,0 +1,81 @@
+---
+- name: reusabity
+  hosts: db
+  become: true
+  gather_facts: true 
+  tasks:
+  - import_tasks: task1.yml
+    when: ansible_os_family=="Debian"
+
+  - import_tasks: task2.yml                    #static
+    when: ansible_os_family=="Debian"  
+
+
+  - include_tasks: task3.yml
+    when: ansible_os_family=="Debian"          #dynamic
+
+  - include_tasks: task4.yml
+    when: ansible_os_family=="Debian"
+
+
+
+>task1.yml  
+---
+  - name: installing tree 
+    apt: 
+      name: tree
+      state: present
+
+
+>task2.yml
+---
+  - name: installing  wget 
+    apt: 
+      name: wget
+      state: present 
+
+
+>task3.yml  
+---
+  - name: installing tomcat9
+    apt: 
+      name: tomcat9
+      state: present
+
+
+>task4.yml
+---
+  - name: installing tomcat9-admin
+    apt: 
+      name: tomcat9-admin
+      state: present
+
+>---------------------------------------------------------------
+
+---
+- name: reusabity
+  hosts: db
+  become: true
+  gather_facts: true 
+  tasks:
+   - include_vars: var_{{ansible_os_family}}.yml    #   ---->  var_Debian.yml , based on facts
+   - debug: 
+      msg: "pkg name={{pkg}}"
+
+
+
+>var_Debian.yml
+---
+ pkg: tomcat9 
+
+
+
+>var_RedHat.yml
+---
+ pkg: httpd 
+
+---
+>
+
+>we just need to keep the all files in dir from where we are  operating, there is nothing to do with var* files.
+>---------------------------------------------------------------

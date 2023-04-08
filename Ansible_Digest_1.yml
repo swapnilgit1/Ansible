@@ -1,0 +1,977 @@
+>
+
+>last usable version : 2.9
+>current version : latest
+
+ansible-doc -l
+ansible-doc -t <module> -l
+
+
+  name: sample playbook
+  hosts: web
+  become: yes
+  tasks:
+  - name: executing command
+    command: touch /tmp/file1.txt
+    when: ansible_os_family == debian
+
+
+#ansible-playbook play1.yaml  -i <inventory.yaml>
+
+we can use "-i" flag to provide custom inventory file, but we can also edit ansible.cfg file to mark permanant 
+entry for custom file, by replacing the value of inventory variable with path of custom inventory file.
+so that we do not need to provide invetory file every time we execute playbook.
+
+
+- name: playbook1
+  host: all
+  become: true
+  become_user: swapnil
+  become_method: su 
+  tasks:
+    - name: execute command
+      command: apt-get update && touch ./a1
+
+
+>
+*DEBUGGING_THE_PLAYBOOK_
+>ansible-playbook -i inv playbook.yml --syntax-check      ----> to check the playbook syntax
+>ansible-playbook -i inv playbook.yml --check             ----> to dry run the playbook
+>ansible-playbook -i inv playbook.yml --check --diff      ----> to dry run the playbook and check the differences 
+>                                                               made over the previous run
+>ansible-playbook -i inv playbook.yml --check --diff -v   ----> to dry run & check diff along with various verbosities
+
+
+
+*ansible.cfg_
+
+*ref_https://docs.ansible.com/ansible/2.4/intro_configuration.html
+
+>by default only empty ansible.cfg file is provided at /etc/ansible dir, which do not contain any configuration, 
+>using command given in empty config file, we can
+>generate a new ansible.cfg , which contains all the configuration data.
+
+# Since Ansible 2.12 (core):
+# To generate an example config file (a "disabled" one with all default settings, commented out):
+
+>  ansible-config init --disabled > ansible.cfg , 
+   This will generate config file with all option(basic) commented out, all the setting will remain to default
+
+# Also you can now have a more complete file by including existing plugins:
+
+> ansible-config init --disabled -t all > ansible.cfg
+
+# For previous versions of Ansible you can check for examples in the 'stable' branches of each version
+# Note that this file was always incomplete  and lagging changes to configuration settings
+
+# for example, for 2.9: https://github.com/ansible/ansible/blob/stable-2.9/examples/ansible.cfg
+
+>export ANSIBLE_CONFIG=$PATH:/path/of/the/ansible.cfg
+
+>some basic default values...
+
+*inventory      = /etc/ansible/hosts                   --->location of custom inventory file
+*library        = /usr/share/my_modules/               --->location of custom modules directory
+module_utils   = /usr/share/my_module_utils/
+*remote_tmp     = ~/.ansible/tmp                        --->location of temporary files on remote hosts
+*local_tmp      = ~/.ansible/tmp                        --->location of temporary file on local machines
+plugin_filters_cfg = /etc/ansible/plugin_filters.yml
+*forks          = 5
+*poll_interval  = 15
+*sudo_user      = root
+*ask_sudo_pass = True
+*ask_pass      = True
+transport      = smart
+*remote_port    = 22
+module_lang    = C
+module_set_locale = False
+
+*ref_https://github.com/ansible/ansible/blob/stable-2.9/examples/ansible.cfg
+
+precedence of ansible config file: 
+1. config file exported/reffered as environmental variable on master node(ANSIBLE_CONFIG=$PATH:/path/of/the/ansible.cfg)
+2. config file at present working directory (./ansible.config)
+3. config file at ansible users home directory (/home/user/ansible.config)
+4. config file at default location (/etc/ansible/ansible.config)
+
+***************************************************************************************************************
+
+
+*mode_adhoc_https://www.middlewareinventory.com/blog/ansible-ad-hoc-commands/
+
+
+- name: finding uptime
+  hosts: main 
+  tasks:
+  - name: find uptime
+    shell: uptime
+    register: up_time                # this is like variable to register the output of command
+  - debug:
+      var: up_time.stdout_lines      # this will redirect the output of register to stdout
+  
+  - name: find ram
+    shell: free -h
+    register: ram_info
+  - debug:
+      var: ram_info.stdout_lines  
+
+*----------------------------------------------------------------------
+> 
+
+#Ansible host key checking
+>we can disable, so that ansible will not ask for permission except for first time while executing ansible commands.
+>we can do this in 3 ways_
+
+#1_
+ export ANSIBLE_HOST_KEY_CHECKING=False
+#2_
+ in ansible.cfg file --->    make host key checking as False
+#3_
+ we can turn off host key checking from aws console for selector vm. 
+
+
+*Ansible_Dependancy_
+
+>python is the only dependancy of the ansible.
+
+>managed nodes and master both needed to have python-2 (2.6 or higher) or python 3 (3.5 or higher) version for working.
+>if we have a node without python installed, we can still use the RAW module of ansible to run commands.
+
+>RAW module do not have python dependancy, but needed use unix like command syntax with it, 
+>that is why it is not preffered
+
+>if we have multiple python install installed on the machines, ansible gave us the choice to select the suitable
+>python interpretor, Using "ANSIBLE_PYTHON_INTERPRETOR" declarative in ansible inventory file.
+
+
+*adhoc_commands_
+
+>ansible-doc -l  | grep <option>  --> to list and filter out all the available modules
+>ansible-doc <module_name>        --> give all details on perticular  module
+
+ansible-doc -l
+ansible-doc -t <module> -l
+
+>ansible [-i <inv>] [group/server/ip/RE/..] [-m <module>] [-a "<k1=v1>; <k2=v2>"] [-b/-k/-s] [-e extraVar] [--flags]
+
+whenever we executes the ansible module on remote node, ansible engine pushes/transfer that module on to that
+node where it gets executed. once execution is completes ansible deletes that module on that Node.
+
+we can verify that, at home directory of ansible user, a directory ".ansible" is get created on a node, whenever we 
+execute any module. we can navigate through the directory for each module on remote node, we will get the
+python script/module on remote Node.
+
+if we wish to keep that module on the remote node, after execution, we can do it as below ways_
+
+>ANSIBLE_KEEP_REMOTE_FILES=1 <ansible_command>  ---> TO KEEP THE EXECUTED MODULES ON NODES AFTER EXECUTION.
+*ANSIBLE_KEEP_REMOTE_FILES=1 ansible all -m shell -a "uptime"   ---> execute as it is.
+
+
+>--------------------------------------------------------------------------------------------------------
+*ansible-inventory -i <inventory> --list    ---> give all inventory data in json format
+*ansible-inventory -i <inventory> --graph   ---> give all inventory data in graphical format
+*ansible all -i <inventory> --list-hosts
+*ansible <group/>  -i <inv> --list-hosts
+
+>ansible all -i <inventory> -m shell -a "/sbin/reboot -t now"  ---> to reboot the servers.
+>ansible group1:group2 -m shell -a "uptime ; free -m"           --> will execute on default inventory multiple groups
+>ansible -i testinv all  -m shell -a "echo 'hi' ; sleep 2"      --> will execute on group in provided inventory
+>ansible all -m shell -a "sleep 5" -f 1
+
+
+#apt
+>ansible db -m apt -a "name=figlet state=present" -b/-k 
+
+
+#copy file from master to slave
+>ansible server1 -m copy -a "src=./play1.yaml dest=/home/swapnil"
+>ansible server1 -m copy -a "content='hi, this is master' dest=/home/swapnil/a2.txt"
+>ansible server1 -m copy -a "content='hi, this is master node\n' dest=/home/swapnil/a2 backup=yes"   
+                                            #will keep the backup before overriting...
+
+#copy file from one dir to another dir on slave
+>ansible server1 -m copy -a "src=./x/* dest=/home/swapnil remote_src=true"
+
+#download file from slave to master
+*server1 is a server from which we are downloading the file to master node
+
+>ansible server1 -m fetch -a "src=/home/swapnil/c1 dest=./"            #will download all directory structure of file
+>ansible server1 -m fetch -a "src=/home/swapnil/c1 dest=./ flat=yes"   #will copy only file
+>ansible server1 -m fetch -a "src=/home/swapnil/c1 dest=./{{inventory_hostname}}_demo flat=yes" 
+
+
+
+#create file/directory on slave
+*ref_https://docs.ansible.com/ansible/2.8/modules/list_of_files_modules.html
+
+>ansible server1 -m file -a "path=/home/swapnil/s1 state=touch mode=777"   -----> for file
+>ansible server1 -m file -a "path=/home/swapnil/s1 state=directory"        -----> for directory
+>ansible server1 -m file -a "path=/home/swapnil/s1 state=absent"           -----> to delete the file/dir 
+ state can be , absent, directory, file, hard, link, touch
+
+*multiple_directories_using_loops_
+
+- hosts: all   
+  tasks:
+  - name: Ansible create multiple directories with_items    
+    file:
+     state: directory
+     path: ~/backups/{{item}}    
+     with_items:
+          - 'mysql'      
+          - 'repository'      
+          - 'config'
+
+*Set_Permissions_for_a_Directory
+
+- hosts: all 
+  become: yes 
+  tasks:
+   - name: Ansible create directory and set permissions    
+     file:
+      path: /backups      
+      state: directory      
+      mode: "u=rwx,g=wx,o=rwx"    # mode: "0766"   
+
+
+#install packages on slave
+>ansible db:web -i inventory -m apt -a "name=tree state=present" -b
+ possible state values will be, present , absent , installed, removed, latest, 
+
+
+#ansible facts
+
+>ansible db -i inventory -m setup
+>ansible db -i inventory -m setup  -a "filter=ansible_os_family"
+
+read_  facter , ohai
+
+*ANSIBLE_FACTS_
+
+>ansible facts are nothing but the generic information about the managed nodes like, os, ram, cpu, distribution, etc..
+>the task of collecting this remote system information is called as gathering facts and collected information
+>is called facts or variable.
+>we can gather facts using "setup" module in playbook or in ad-hoc commands.
+
+>there are two types of facts, DEFAULT FACTS AND CUSTOM FACTS
+
+*Custom_facts_
+>1.to get user defined required facts or to inject facts perticular to the node/nodegroup in to the selected node
+eg_ to get s/w version , name/id of server, group it is belongs etc..on managed nodes.
+>2.these are not mendatory
+>3.can be used to identify prod/nonprod, dev etc, servers
+
+>steps to create custom facts_
+
+>1. create /etc/ansible/facts.d/  ---> dir on managed nodes where we want to plant the custom facts
+>2. inside of facts.d place one or more custom facts files with extension as '.fact' eg. name.fact
+>3. the output of the fact file must be json format
+>4. the fact file should have execution permission
+
+*custom_facts_(o/p must be json format)
+
+#!/bin/bash
+git_ver=$(git --version | awk '{print $3}') 
+ 
+cat << EOF
+{
+  "Git_Version":"$(git_ver)"
+}
+EOF
+> ansible db -i invetory -m setup | grep -i Git_version
+
+
+#!/bin/bash
+vm_group=production      #vm_group=test, vm_group=staging, vm_group=deploy
+vm_name=vm_prod_01
+
+cat << EOF
+{
+  "target":"$(vm_group)"         # <<--------file_1.fact, look below
+  "vm_id":"$(vm_name)"
+}
+EOF
+
+> ansible db -i invetory -m setup | grep -i "target"     ----> will return "production"
+
+>custom facts are very useful in use for playbook, as we know custom fact for each node in advance, and we can set
+>several custom facts for each node or node group
+eg_  when: target == production
+eg_  when: vm_id == vm_prod_01
+eg_  when: target == production and vm_id == vm_prod_01
+
+
+#creating facts uysing ansible playbook
+
+- hosts: all 
+  become: yes 
+  host: server1
+  tasks:
+   - name: create fact.d directory and set permissions    
+     file:
+      path: /etc/ansible/facts.d      
+      state: directory      
+      mode: "u=rwx,g=wx,o=rwx" 
+
+   - name: copying the facts file 
+     copy: 
+      src: /home/ansible/file1.fact
+      dest: /etc/ansible/facts.d 
+      mode: "u=rwx,g=wx,o=rwx"          
+
+>-----------------------------------------------------------------------------------------------------------
+
+#all will work_
+>ansible server1 -m setup -a "filter=*family*"
+>ansible server1 -m setup -a filter="*family*"
+>ansible server1 -m setup -a filter=*family*
+>ansible server1 -m setup -a "filter=ansible_local"
+
+
+#DYNAMIC INVENTORIES_
+*ref_https://docs.ansible.com/ansible/latest/plugins/inventory.html#enabling-inventory-plugins
+*ref_https://github.com/sermilrod/ansible-dynamic-inventory
+*Imp_ref_https://docs.ansible.com/ansible/2.9/user_guide/intro_dynamic_inventory.html
+*ec2_inv_script_https://raw.githubusercontent.com/ansible/ansible/stable-2.9/contrib/inventory/ec2.py
+
+>boto or boto3 is needed to be installed first
+>sudo pip2 install boto
+
+aws account details needed , iam user keys (aws configure).
+or we can assign iam role with full ec2 access to ansible master node , if it is aws ec2 machine.
+
+we can execute the ec2.py script to filter out the node details or
+we can provide inventory script as inventory with -i flag (all server details will be under ec2 group)
+>ansible ec2 -i ec2.py -m ping
+
+*[even through we get an ip via dynamic inventory for newly launched istance or instance created via AutoScalling
+mechanism, we will not be able to configure it via ansible, we will get PERMISSION DENIED ERROR  ]
+>[configurations like, User that we created, permission like VISUDO , RSA key exchanges etc.]
+*[we need a node with preconfigures setting, for that it is advisable to create a new instance via
+pre-configured user AMI]
+
+
+
+>dynamic inventories are script like shell/python for dynamic environments, Cloud is a dynamic env.
+>Ansible has dynamic inventory scripts for below environment_
+aws ec2, openstack, google compute engine, space walk, jails...
+
+>1. store aws programatic access credentials on ansible engine or Assign IAM role to ansible engine.
+
+>ansible-inventory -i ec2.py --list
+>ansible-inventory -i ec2.py --graph
+>ansible all -i ec2.py --list-hosts
+
+#RAW MODULE
+if we do not have python installed on a ansible nodes,then it is not possible to execute the ansible 
+modules/adhoc on that node. python is dependancy of the ansible. 
+However, ansible provides the "RAW" module  for a nodes where python is not installed. it allow us execute
+certain linux commands on nodes. however this is not recommanded way, and it have very complex unix syntax.
+
+>ansible all -i inv -m raw -a "unix_command_syntax"
+>ansible all -i inv -m raw -a "uptime"
+>ansible all -i inv -m raw -a "mkdir -p /temp/swapnil/data1/"
+
+
+*Rebooting_the_Nodes_
+
+>to reboot the remote host(linux/debian)
+ansible <name/group> -i inv -m shell -a "/sbin/reboot -t <now /<- time>>"
+>or_
+ansible <group> -i <inv> -m shell -a "init 6" -b       # init is a parent process of all processes with PID=1
+>or_
+- name: Reboot a slow machine that might have lots of updates to apply
+  ansible.builtin.reboot:
+    reboot_timeout: 3600
+
+
+>to shutdown the remote host(linux/debian)
+ansible <name/group> -i inv -m shell -a "/sbin/shutdown now /- <time>"
+>or_
+ansible <group> -i <inv> -m shell -a "init 0" -b
+>or_
+- name: Delay shutting down the remote node
+  community.general.shutdown:
+    delay: 60
+
+>--------------------------------------------------------------------------------------
+
+>DEBUG MODULE_
+
+
+- name: using debug module
+  hosts: main
+  tasks:
+  - name: printing massage
+    debug:
+      msg: "welcome to ansible playbook" 
+
+  - name: printing massages
+    debug: 
+      msg: 
+       - "massage1"
+       - "massage2"
+       - "massage3"   
+
+  - name: variable1 
+    debug:
+     msg: 
+      - "hostname : {{inventory_hostname}}"
+
+  - name: variable2
+    debug:
+     var: inventory_hostname     
+
+
+  - name: verbosity
+    debug: 
+      msg: "this is massage"       #default verbosity is 0
+
+  - name: verbocity is 2
+    debug: 
+      msg: "verbosity is 2" 
+      verbosity: 2                  #ansible-playbook play4.yml -vv , need 2 v , only then task is executed.
+
+*adhoc: ansible all -i invetory -m debug -a "msg='hi computer'"
+
+>----------------------------------------------------------------------------------
+
+>input-output (taking input from user)
+
+
+- name: input output
+  hosts: main
+  gather_facts: false
+  vars:
+    x: 45
+    my_id: "swapnil"
+
+  vars_prompt:                    # by default prompt is private, i.e. enter value will not be showed on terminal
+    name: y                  
+    prompt: enter y value 
+    private: false                # false/ no , value will be displayed
+
+  tasks: 
+  - name: using variable 
+    msg: 
+     - "the value of x : {{x}}"
+     - "name is : {{my_id}}"  
+     - "y value is : {{y}}"       # prompt willl asks for value of y
+
+
+>----------------------------------------------------------------------------------
+
+
+
+*Command_line_arguments_
+
+>command line arguments are useful to pass data from command line, we can pass different types of data,
+>in different formats , like SCALAR, SEQUENCE, MAP
+
+>we can also store data in yaml, json file and then pass that file to the playbook
+
+
+*passing scaler data_
+
+>ansible-playbook play6.yml -e "x=333"   # -e to pass arguments. , -e or --extra-var
+>ansible-playbook play6.yml -e x=333
+
+
+- name: cmd args
+  hosts: main
+  gather_facts: false
+  tasks: 
+  - debug : 
+      var=x    #value of x is not defined in playbook.
+
+
+>------------------------------------------------------------------------------
+
+*Map
+
+>ansible-playbook play7.yml -e "{'x':45,'y':5345}"
+>ansible-playbook play7.yml -e "x=45 y=5345"
+
+
+- name: cmd args
+  hosts: main
+  gather_facts: false
+  tasks: 
+  - debug : 
+      msg: 
+      - "x values : {{x}}"
+      - "y values : {{y}}"
+
+>------------------------------------------------------------------------------
+
+
+>Passing sequence data_
+>ansible-playbook play7.yml -e "{'x':[2,3,4,5,6],'y':5345}"
+
+>Passing map data_
+>ansible-playbook play7.yml -e "{'x':{'one': 1, 'two': 2, 'three': 3},'y':5345}"
+
+>command like arguments as a file_
+>ansible-playbook play7.yml -e "@<file_name.yaml>/@<filename.json>"
+
+>------------------------------------------------------------------------------
+
+
+
+- name: install s/w
+  hosts: server1
+  become: yes
+  tasks: 
+  - name: install tomcat9 
+    apt: 
+     name: tomcat9
+     state: present
+
+
+
+
+- name: install s/w
+  hosts: server1
+  become: yes
+  tasks: 
+  - name: install {{pkg}}
+    apt: 
+     name: "{{pkg}}"
+     state: "{{state}}"
+
+>ansible-playbook <playbook_name.yml> -e "pkg=nginx state=present"   
+
+>ansible-playbook <playbook_name.yml> -e "pkg=nginx" -e "state=present"  
+
+
+>------------------------------------------------------------------------------
+
+*Ansible_Playbook_Tags
+
+>playbook might contains various tasks, and we may not want to execute all of them at once.
+>morever, we want to only execute few of them.
+>but as playbook runs in its entirity from top to bottam, we need a some sort of mechanism 
+>to execute only few of them, This can be achieved using tags, as follow_
+
+
+- name: install s/w
+  hosts: dns1
+  become: yes
+  tasks: 
+  - name: install tomcat9
+    apt: 
+     name: tomcat9
+     state: present
+    tags: 
+    - install 
+
+  - name: starting tomcat9
+    service: 
+     name: tomcat9
+     state: started
+    tags: 
+    - start 
+
+  - name: stopping tomcat9
+    service: 
+     name: tomcat9
+     state: stopped  
+    tags: 
+    - stop    
+
+
+
+>ansible-playbook -i <> <pb.yml> --tags  install,start   --> to target perticular task with tag(multiple ','seperated)
+>ansible-playbook -i <> <pb.yml> --skip-tags stop,start  --> to skip perticular task with tag(multiple ','seperated)
+
+
+*ASSERT_
+
+>we also check, wheather our task is working or not is by using "Assert Module" _
+
+*this will not do any changes on the node.
+*assert module is mostaly used to check if the playbook code is producing the desired result or not.
+
+- name: install s/w
+  hosts: dns1
+  become: yes
+  tasks: 
+  - name: check if file exist or not
+    action: shell /bin/ls               # command or shell module can also be used.
+    register: list_files 
+  - assert: 
+      that: 
+       - "'checkfile.txt' in list_files.stdout.line"     # in / not in,  are operators
+
+#above assert module will check, if checkfile.txt is exist in list_files output or not.       
+
+
+>------------------------------------------------------------------------------
+
+>Ansible Components and Terminology_
+
+---
+Inventory :
+  server_name
+  private ip
+  public ip
+  private dns record
+  public dns record
+  ansible_user_name
+  ansible_ssh_password
+  ansible_ssh_port
+  ansible_ssh_connection type  ssh/winrm
+  ansible_python_interpretor
+  Group_vars
+  Host_vars
+
+
+
+playbook :
+  Name
+  hosts
+
+  become
+  become_user
+  become_method
+  remote_user
+  sudo 
+
+  vars
+  vars_files
+  vars_prompt
+
+  serial 
+  strategy 
+  gather_facts
+
+  any_error_fatal
+  max_fail_percentage
+  force_handler
+   
+  tasks
+  delegate_to
+  handlers 
+      name
+      module
+      listen
+
+  > 1.by default handlers run after All the tasks in play finished their execution
+  > 2.handlers execute in an order as they are defined in handler section , not as they defined in notify section.
+  > 3.single notify can notify multiple handlers, notify can have array of handler names.
+
+
+
+Tasks: 
+  Name
+  become
+  become_user
+  become_method  
+  sudo
+  hosts 
+  module 
+  Async 
+  poll 
+  when 
+  notify
+  tags
+  
+  ignore_error
+  ingnore_unreachable
+  block 
+  rescu 
+  always
+  failed_when
+  changed_when
+  
+  include_tasks
+  include_vars
+  include_roles
+  include_playbook
+
+  import_tasks
+  import_vars
+  import_roles 
+  import_playbook
+  
+  with_items / items
+  loop
+  loop_control
+    loop_var
+
+
+  
+important_modules_ : 
+  debug
+  apt
+  yum 
+  package 
+  service
+  copy 
+  fetch 
+  file
+  get_url 
+  url
+  shell 
+  command  
+  script 
+  user 
+  reboot
+  shutdown
+  assert
+  synchronize
+
+
+
+ansible_commands :
+  ansible <group> -i <inv> -m <module> -a <args> -b/-k <options/flags>
+  ansible-inventory  --list/--graph
+  ansible-playbook
+  ansible-vault
+  ansible-config
+  ansible-pull        -----> to pull playbooks from vcs
+  ansible-galaxy
+
+
+ansible_error_handling: 
+  block
+  rescu
+  always
+  ignore_error
+  ignore_unreachable
+  failed_when
+  changed_when
+  any_error_fatal
+  max_fail_percentage
+  force_handlers 
+
+--force-handlers , command-line option, or 
+by including "force_handlers: True",  in a play, 
+or by adding :force_handlers = True" to ansible.cfg _
+
+
+
+ansible_playbook_debugging :
+  --syntax_check
+  --check
+  --check --diff
+
+  verbosity
+    - normal (v=0)
+    - verbose (v=1)
+    - more verbose (v=2)
+    - debug (v=3)
+    = connection debug (v=4)
+
+  --tags  
+  --skip-tags
+
+Ansible_Terminologies :
+  inventory
+  playbook 
+  ad-hoc 
+  tasks 
+  hosts 
+  become 
+  groups 
+  handlers 
+  modules 
+  library 
+  push mode 
+  roles 
+  facts 
+
+---
+*******************************************************************************************************************
+---
+>
+>Fetching data from csv and ini files_ 
+
+>pass.csv
+var1,12345
+var2,67890
+var3,765834756
+
+---
+- name: csv1 demo
+  hosts: db
+  vars:
+   var1: "{{ lookup('csvfile','var1 file=pass.csv delimiter=,') }}"
+  tasks:
+  - debug:
+      var: "{{var1}}"
+
+
+---
+- name: csv demo
+  hosts: db
+  vars:
+   var1: "{{ lookup('csvfile','var2 file=pass.csv delimiter=,') }}"
+  tasks:
+  - name: create file
+    command: touch ./var_csv_{{var2}}
+
+>-----------------------------------------
+
+>pass.ini
+
+[my_data_1]
+var=12345
+
+[my_data_2]
+var=987956
+
+
+---
+- name: ini demo
+  hosts: db
+  vars:
+   var1: "{{ lookup('ini', 'var section=my_data_1 file=pass.ini') }}"
+  tasks:
+  - name: create file
+    command: touch ./var_ini_{{var1}}
+
+
+*******************************************************************************************************************
+---
+>
+>loop Control_
+---
+- name: loop control 
+  hosts: db
+  max_fail_percentage: 10
+  become: true 
+  vars: 
+    pkg: 
+      - tree
+      - wget   #array of values
+  tasks: 
+  - name: install 
+    apt: 
+      name: "{{ software }}"
+      state: present
+    loop: "{{ pkg }}"
+    loop_control:
+      loop_var: software
+     
+
+
+
+---
+- name: loop control
+  hosts: db
+ # any_error_fatal: true
+  vars:
+    pkg:
+      - name: tree
+        sw: tree         # dict-map of the values
+      - name: wget
+        sw: wget
+  tasks:
+  - name: install
+    apt:
+     name: "{{ software.sw }}"
+     state: present
+
+    loop: "{{ pkg }}"
+    loop_control:
+     loop_var: software
+
+    become: true
+    ignore_errors: true
+    ignore_unreachable: true
+
+
+
+---
+- name: create multiple users
+  host: web
+  vars:
+   users: 
+    - name: nisha
+      validate: nishaS
+    - name: priya 
+      validate: priyaS
+
+  tasks: 
+  - name: create users 
+    user: 
+      name: "{{test.name}}"         #loop_var.var_key
+      comment: "{{test.validate}}"
+    
+    loop: "{{users}}"   # var name
+    loop_control:
+      loop_var: test    # loop variable
+
+
+*******************************************************************************************************************
+---
+>
+*delegation_in_Asible
+
+*ref_https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_delegation.html
+
+>Delegation is used to perform some task on the host, Other than the our managed hosts. 
+>Other host can be localhost, or host outside of our play, it may be the 
+>host which is part of Inventory or host which is not part of inventory.
+
+>If you want to perform a task on one host with reference to other hosts, use the delegate_to keyword on a task. 
+
+- name: poly1
+  hosts: db 
+  tasks: 
+  - name: task1 
+    apt: 
+      name: tomcat9 
+      state: present 
+
+  - name: task2 
+    user: 
+      name: test_user
+      state: present 
+    delegate_to: web2      # not part of inventory 
+                           # delegate_to, decides which hosts will run the task at runtime.
+                           # task will execute on both machines i.e. db and web1
+
+
+- name: play2
+  hosts: db
+  tasks: 
+  - name: some task
+    apt: 
+      name: telnet
+      state: present
+
+  - name: make a blank filr on control node i.e Master node
+    local_action: 
+      module: file 
+      path: /home/swapnil/
+      state: touch                     #local_action is used to perform task on local master node 
+                                       # file will be created on master node
+
+
+
+
+
+- name: perform delegation
+  hosts: vm1
+  tasks: 
+   - name: get the hostnames
+     command: hostname
+     register: managedhost_output
+
+   - name: print the output of managed host command 
+     debug: 
+      msg: this is output from {{managedhost_output.stdout}}  
+
+   - name: print the output from localhost 
+     command: hostname 
+     delegate_to: 127.0.0.1                # local_action : command="", 
+     register: 127.0.0.1_output
+
+   - name: print the output of local host command 
+     debug: 
+      msg: this is output from {{127.0.0.1_output.stdout}}     
+
+
+*******************************************************************************************************************

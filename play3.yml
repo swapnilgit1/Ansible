@@ -1,0 +1,9 @@
+---
+- name: install s/w
+  hosts: server1
+  gather_facts: no
+  tasks:
+  - name: some tasks 
+    apt:
+      name: nginx
+      state: present

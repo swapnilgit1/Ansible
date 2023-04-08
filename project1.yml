@@ -1,0 +1,72 @@
+---
+- name: installing and configure tomcat
+  hosts: db
+  gather_facts: False
+  become: yes
+  vars: 
+    tomcat_port: 9898  # to be replaced in server.xml.j2 file of tomcat 
+  tasks: 
+    - name: updating the repos
+      apt: 
+        name: "*"
+        state: latest
+
+    - name: installing required java 
+      apt: 
+        name: java-1.8.0-openjdk 
+        state: present 
+
+
+    - name: out of two version of java installed on vm select proper version   
+      alternatives: 
+        name: java 
+        link: /usr/bin/java 
+        path: /entire/path/to/proper/java/version/[run alternative command on machine to get path] 
+
+
+    - name: downloading the tomcat 
+      get_url: 
+        url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.69/bin/apache-tomcat-9.0.69.tar.gz
+        dest: /swapnil/home/download/    
+
+    - name: unarchieving the tomcat tar 
+      unarchive: 
+        src: /swapnil/home/download/apache-tomcat-9.0.69.tar.gz
+        dest: /home/swapnil/tomcat/
+        remote_src: yes                 #to instruct to look for archieve on remote machine, 
+                                      #else it will search at local machine
+
+    - name: renaming tomcat home 
+      command:  mv /home/swapnil/download/tomcat/apache-tomcat-9.0.69  /usr/local/latest 
+
+    - name: running tomcat 
+      shell: nohup /usr/local/latest/bin/startup.sh  #run without closing (nohup) , in background (&)
+
+    - name: replacing default port with required port  (we need to modify server.xml file of tomcat, we can place vars)
+      template: 
+        src: /home/swapnil/download/tomcat/server.xml.j2  #for var fetching we need jinja templating
+        dest: /usr/local/latest/conf/server.xml       
+
+
+    - name: copying the our application archieve to tomcat 
+      copy: 
+        src: home/swapnil/download/app.war
+        dest: //usr/local/latest/webapps/lib/....  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#sudo alternative --config java
+#ls -lrt /usr/lib/jvm  :---> to list all java version libraries 
+#<full path> --version   ---> to get full java path

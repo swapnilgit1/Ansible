@@ -1,0 +1,63 @@
+---
+- name: error handling
+  hosts: server1 
+  gather_facts:  no
+  tasks: 
+  - block:                           #defining all tasks under 1 block
+    - command: "ls /home1/swapnil"
+      register: home1
+    - command: "ls /home/swapnil"
+      register: home
+    - command: "ls /home/swapnil"
+      register: home2
+    ignore_errors: yes                     #ignore errors at block level
+  
+  - debug: var=home1
+  - debug: var=home
+  - debug: var=home2  
+
+
+
+---
+- name: blocks 
+  hosts: server1 
+  gather_facts: yes
+  tasks: 
+  - block: 
+    - name: installing tomcat9 
+      apt: 
+        name: tomcat9
+        state: present 
+      when: ansible_os_family=="Debian"  #ansible_os_family": "Debian"
+      become: yes
+
+    - name: installing httpd 
+      yum: 
+        name: httpd 
+        state: present 
+      when: ansible_os_family=="*RedHat*"
+
+    - debug: 
+        msg: "completed successfully"
+    ignore_errors: yes      
+
+
+
+
+
+---
+- name: error handling
+  hosts: server1 
+  gather_facts:  no
+  tasks: 
+  - block:                          
+    - command: "ls /home1/swapnil"
+      register: home1
+    - command: "ls /home/swapnil"
+      register: home
+    rescu: 
+      - debug: 
+          msg: "give path is not valid"            #this is like try-catch-finally block
+    always: 
+      - debug: 
+          msg: "will always execute"      

@@ -1,0 +1,524 @@
+---
+- name: testing the uptime and ram usage
+  hosts: db, web
+  become: true
+  tasks: 
+  - name: checking uptime
+    shell: uptime
+    register: up_time
+  - debug: 
+      var: up_time.stdout_lines
+  
+  - name: finding ram     
+    shell: free -m 
+    register: free_ram
+  - debug:
+      var: free_ram.stdout_lines
+
+
+
+
+---
+
+>custom facts_ (o/p must be jason format)
+
+#!/bin/bash
+
+git_ver=$(git --version | awk '{print $3}')
+
+cat << EOF
+{
+  "Git_Version":"$(git_ver)"
+}
+EOF
+
+
+
+---
+- name: debug module
+  hosts: deploy
+  tasks: 
+  - name: debug 1
+  - debug:                     
+    - msg: "hi computer"
+    - msg: "hi ansible"
+
+  - name: debug 2
+    shell: git --version
+    register: version  
+  - debug:   
+     var: version.stdout_lines 
+
+---
+- name: debug module
+  hosts: deploy
+  tasks:
+  - name: debug -1 
+  - debug:
+      msg: "hi computer"
+      msg: 
+       - "hi ansible"
+       - "ansible"
+       - "python"
+
+  - name: debug 2
+    shell: git --version
+    register: version
+  - debug:
+     var: version.stdout_lines
+
+
+---
+- name: debug module
+  hosts: deploy
+  tasks:
+  - name: debug -1 
+  - debug: 
+      msg: "hostname : {{inventory_hostname}}"
+
+
+---
+- name: debug module
+  hosts: deploy
+  tasks:
+  - name: debug -1 
+  - debug: 
+      var: inventory_hostname 
+
+
+---
+- name: prompt vars
+  hosts: deploy
+  vars: 
+   x: 45
+   y: 50
+  vars_prompt:
+   - name: name
+     prompt: "enter  your name"
+     private: false  
+   - name: password
+     prompt: "enetr password"
+     private: yes  
+  tasks:
+   - debug: 
+      msg: 
+      - "the x values is: {{x}}"
+      - "the y values is: {{y}}"
+      - "the name values is: {{name}}"
+      - "the password values is: {{password}}"
+
+
+
+
+---
+- name: prompt vars
+  hosts: deploy
+  vars_files: 
+   - test_var.yml 
+  tasks:
+   - debug: 
+      msg: 
+      - "the x values is: {{x}}"
+      - "the x values is: {{7}}"
+
+>test_var.yml
+x: 3434
+y: 2534
+
+
+
+---
+- name: paybook
+  hosts: deploy
+  tasks: 
+   - debug: 
+      msg: 
+      - "the x values is: {{x}}" 
+      - "the x values is: {{y}}"  
+
+---
+ansible-playbook -i invetory play5.yml -e "x=34 y=4234"
+ansible-playbook -i invetory play5.yml --extra-var "x=34"
+
+
+>var.yml
+x: 43
+y:
+ - 4
+ - 5                     #passing the variable file via command
+ - "ansible"
+pkg: 
+ "linux": "httpd"
+ "ubuntu": "apache2" 
+
+*ansible-playbook -i inventory play5.yml -e "@var.yml"
+
+
+---
+- name: install any package
+  hosts: db
+  gather_facts: false
+  become: true 
+  tasks:: 
+  - name: install/uninstall {{pkg}}
+    apt: 
+      name: "{{pkg}}"
+      state: "{{state}}"
+
+>ansible-playbook -i inventory <playbook> -e "pkg=wget state=absent"     
+
+
+
+
+>rescu_Block
+---
+- name: rescu_Block
+  hosts: deploy 
+  become: true
+  gather_facts: no
+  tasks: 
+  - name: checking block 
+    command: "ls ./"
+    ignore_errors: true
+    register: pwd_file
+  - debug: 
+      var: pwd_file.stdout_lines  
+   
+  - name: block 2
+    command: "ls ./tomcat8/"
+    register: tomcat_file
+    ignore_errors: true
+  - debug: 
+      var: tomcat_file.stdout_lines  
+
+  - name: block3
+    command: "ls ./"
+    register: pwd_file2
+    ignore_errors: true
+  - debug: 
+      var: pwd_file2.stdout_lines         
+
+
+
+
+
+---
+- name: rescu_Block
+  hosts: deploy 
+  become: true
+  gather_facts: no
+  tasks:
+
+  - block:
+
+    - name: checking block 
+      command: "ls ./"
+      register: pwd_file
+    - debug: 
+        var: pwd_file.stdout_lines  
+    
+    - name: block 2
+      command: "ls ./tomcat8/"
+      register: tomcat_file
+    - debug: 
+        var: tomcat_file.stdout_lines  
+
+    - name: block3
+      command: "ls ./"
+      register: pwd_file2
+    - debug: 
+        var: pwd_file2.stdout_lines        
+
+  - ignore_errors: true      
+
+>------------------------------------------------------------------------------------
+---
+- name: installing packages
+  hosts: db, web
+  become: true
+  gather_facts: true
+  tasks: 
+  - name: installing tree 
+    apt: 
+      name: tree
+      state: present 
+    when: ansible_os_family=="Debian" 
+
+  - name: installing apache2 
+    apt: 
+      name: apache2
+      state: present 
+    when: ansible_os_family=="Debian"
+
+  - name: starting service 
+    service: 
+      name: apache2 
+      state: started 
+    when: ansible_os_family=="Debian"
+
+  - name: installing httpd 
+    yum: 
+      name: httpd 
+      state: present
+    when: ansible_ios_family=="RedHat"
+
+  - name: starting service 
+    service: 
+      name: httpd 
+      state: started 
+    when: ansible_os_family=="RedHat"
+
+
+  - debug: 
+      msg: "all task completed"   
+
+>------------------------------------------------------------------------------------
+
+
+---
+- name: installing packages
+  hosts: db, web
+  become: true
+  gather_facts: true
+  tasks: 
+  - block:
+    - name: installing tree 
+      apt: 
+        name: tree
+        state: present  
+
+    - name: installing apache2 
+      apt: 
+        name: apache2
+        state: present 
+
+    - name: starting service 
+      service: 
+        name: apache2 
+        state: started 
+
+    when: ansible_os_family=="Debian"   # for block
+    ignore_errors: true
+
+
+  - block:
+    - name: installing httpd 
+      yum: 
+        name: httpd 
+        state: present
+     
+    - name: starting service 
+      service: 
+        name: httpd 
+        state: started 
+      
+    when: ansible_os_family=="RedHat"
+    ignore_errors: true
+
+
+  - debug: 
+      msg: "all task completed"   
+
+
+>------------------------------------------------------------------------------------
+
+
+---
+- name: installing packages
+  hosts: db, web
+  become: true
+  gather_facts: true
+  tasks: 
+  - block:
+    - name: installing tree 
+      apt:                           # if this task failed, only then rescu block will execute
+        name: treeeee                # like, java, try-catch and finally block
+        state: present  
+    when: ansible_os_family=="Debian"
+    
+    rescue: 
+    - debug: 
+        msg: "not a valid package"
+
+
+---
+- name: installing packages
+  hosts: db, web
+  become: true
+  gather_facts: true
+  tasks: 
+  - block:
+      - name: installing tree 
+        apt:                           # if this task failed, only then rescu block will execute
+          name: treeeee                 # like, java, try-catch and finally block
+          state: present  
+    when: ansible_os_family=="Debian"
+
+    rescue: 
+      - debug: 
+          msg: "not a valid package"
+
+    always:    
+      - debug:                                # always block always execute
+          msg: "always executing"
+
+
+>------------------------------------------------------------------------------------
+
+*ref_ https://docs.ansible.com/ansible/2.9/modules/list_of_cloud_modules.html
+*ref_ https://docs.ansible.com/ansible/2.9/modules/ec2_module.html#ec2-module
+
+
+
+>aws ec2 provisioning using ansible
+
+*req_ 
+1. python, boto3
+2. we need aws iam account programmatic access credentials (aws configure)
+3. or else we can provide access details in playbook directaly 
+
+---
+- name: aws ec2
+  hosts: localhost
+  connection: local   # we do not want any ssh connectivity.
+  gather_facts: no
+  tasks: 
+    - name: launch aws ec2
+      ec2: 
+        key_name: mykey
+        instance_type: t2.micro
+        image: ami-123456
+        wait: yes
+        group: webserver
+        count: 3
+        vpc_subnet_id: subnet-29e63245
+        assign_public_ip: yes
+        region: us-east-1
+        aws_access_key: 2rwefwef43r
+        aws_secrete_key: er2332rwef4
+
+
+>install aws-cli 
+>aws configure
+>priovide keys  and region 
+>this credentils will stored at users home directory at .aws directory.
+>once done we can remove key from playbook, ansible automatically search for these in .aws/credentials file.
+>we can also encrypt this credentials using ansible vault.
+
+************************************************************************************************************
+
+>Ansible Vault_
+
+aws_key.yml
+
+---
+  aws_access_key : ufhweiubvkvnkwjjhjjk
+  aws_secrete_key: ifhweiu79f7eqf79wfhn
+
+
+>aws_ec2.yml
+
+---
+- name: aws ec2
+  hosts: localhost
+  connection: local   # we do not want any ssh connectivity.
+  gather_facts: no
+  vars_files: aws_key.yml
+  tasks: 
+    - name: launch aws ec2
+      ec2: 
+        key_name: mykey
+        instance_type: t2.micro
+        image: ami-123456
+        wait: yes
+        group: webserver
+        count: 3
+        vpc_subnet_id: subnet-29e63245
+        assign_public_ip: yes
+        region: us-east-1
+        aws_access_key: {{aws_access_key}}
+        aws_secrete_key: {{aws_secrete_key}}
+
+---
+>
+>encrypting the keys file
+ansible-vault encrypt aws_key.yml
+
+>executing the playbook
+ansible-playbook -i inv aws_ec2.yml --ask-vault-pass 
+
+*ansible_vault
+>ansible-vault create <playbook>   --> promt will ask password and we can create playbook in encrypted format.
+>ansible-vault view
+>ansible-vault decrypt
+>ansible-vault rekey
+>ansible-vault edit
+
+
+>Instead of providing vault password at prompt, we can also store the vault password in a file and
+>provide that file to the playbook execution command directaly
+
+>my_pass.txt
+test@password
+
+>ansible-playbook -i inv playbook.yml --vault-password-file /or/ --vault-id  <my_pass.txt>
+
+************************************************************************************************************
+
+
+> Handlers_
+
+Sometimes you want a task to run only when a change is made on a machine. 
+For example, you may want to restart a service if a task updates the configuration of that service, 
+but not if the configuration is unchanged. Ansible uses handlers to address this use case. 
+Handlers are tasks that only run when notified.
+
+
+---
+- name: installing packages
+  hosts: db
+  become: true
+  gather_facts: false
+  tasks: 
+  - name: instaling apache2
+    apt : 
+     name: apache2 
+     update_cache: true 
+     state: present
+    notify: test_handler
+
+  handlers: 
+  - name: test_handler  
+    service: 
+      name: apache2 
+      state: stopped 
+
+
+******************************************************************************************************************
+
+
+
+---
+- name: installing packages
+  hosts: db
+  tasks: 
+  - name: checking async mode
+    command: sleep 120
+    async: 70
+    poll: 35
+
+  - name: second task 
+    command: touch a.txt
+
+
+---
+- name: installing packages
+  hosts: db
+  tasks: 
+  - name: checking async mode
+    command: sleep 120
+    async: 70
+    poll: 0
+
+  - name: secon task 
+    command: touch a.txt

@@ -1,0 +1,88 @@
+---
+- name: provisioning aws ec2 using ansible
+  hosts: localhost
+  connection: local 
+  gather_facts: false
+  tasks: 
+   - name: to laounch ec2 instance with default values 
+     ec2: 
+        aws_access-key:          # we can use awc-cli for configuring credential , rather tha giving it in playbook
+        aws_secret_key:          # if configured with cli, not needed in playbook. 
+
+        image: ami-1234567890
+        instance_type: t2.micro
+        key_name: somekey.pem
+        region: ap-south-1
+
+        volumes:
+          - device_name: /dev/sdb
+            snapshot: snap-abcdef12
+            volume_type: io1
+            iops: 1000
+            volume_size: 100
+            delete_on_termination: true
+
+        monitoring: yes
+        vpc_subnet_id: subnet-29e63245
+        assign_public_ip: yes
+
+
+
+
+
+Requirements (on host that executes module) :
+install ansible on as ec2 vm 
+python >= 2.6
+boto
+
+>ref_ https://docs.ansible.com/ansible/2.4/ec2_module.html
+>ref_ https://docs.ansible.com/ansible/2.4/list_of_cloud_modules.html
+
+
+>install python
+>pip install boto boto3 --user
+
+
+
+>ansible-vault -h
+>ansible-vault encrypt <file>    , prompt will ask for password
+>ansible-vault decrypt <file>
+>ansible-vault view <file>
+>ansible-vault edit <file>
+>ansible-vault rekey <file>
+>ansible-vault string <
+>ansible-vault
+>ansible-vault 
+
+>ansible-playbook <playbok.yml> --ask-vault-password
+>---------------------------------------------------------------------------------------------------------
+
+
+if we are providing, aws credentials in seperate file, rather that at aws cli,
+we can use ansible vault to secure them 
+
+
+>cred.yml   ,   >ansible-vault encrypt cred.yml
+---
+   aws_secret_key: dsfsfsdfsdffsdlff
+   aws_access_key: fsdfffffffkjsfhlf
+
+
+>testplay.yml
+---
+- name: provisioning aws ec2 using ansible
+  hosts: localhost
+  connection: local 
+  gather_facts: false
+  tasks: 
+   - name: to laounch ec2 instance with default values 
+     ec2: 
+        aws_access-key: "{{aws_access-key}}"         
+        aws_secret_key: "{{aws_secret_key}}"     
+
+        image: ami-123456
+        instance_type: t2.micro
+        key_name: somekey.pem
+        region: ap-south-1
+
+>>ansible-playbook testplay.yml --ask-vault-password        

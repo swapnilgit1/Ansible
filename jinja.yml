@@ -1,0 +1,73 @@
+>
+In a Jinja2 template file, you will find the following tags:
+
+{% … %} : for control statements (conditions)
+
+{{ … }}: for expressions (variables)
+
+{{# … #}} : for comments (describe the task)
+
+---
+
+{{ variable | default(10) }}
+{{ age | default(omit) }}
+{{ variable | mandatory }}
+{{ [ 12, 13, 45, 54, 80, 97] | min }}  => 12
+{{ ”Gaurav Sharma” | replace (“Gaurav”, “Heena”) }} => Heena Sharma
+
+>-----------------------------------------------------------------------------------------------
+
+---
+  name: this is our first play.
+  hosts: webserver1
+  vars: 
+    your_name: Gaurav
+    dummy_list: 
+       - 1
+       - 10
+       - 20
+       - 30
+       - 10
+    dummy_list2:
+       - 30
+       - 40
+       - 10
+       - 50
+
+  tasks: 
+    - 
+      debug: 
+        msg: "Hello {{ your_name  }}"                 ------> Gaurav
+    - 
+      debug:
+        msg: "Hello {{ your_name | upper  }}"        ------> GAURAV
+    - 
+      debug:
+        msg: "Hello {{ your_name | lower  }}"         ------> gaurav
+    - 
+      debug:
+        msg: "{{ dummy_list | min }}"              ------> 1
+    - 
+      debug:
+        msg: "{{ dummy_list | max }}"          ------>30
+    - 
+      debug:
+        msg: "{{ dummy_list | unique }}"         ------>1 ?/test
+    - 
+      debug:
+        msg: "{{ dummy_list | union(dummy_list2) }}"        ------>1, 10,20,30,40,50
+    - 
+      debug:
+        msg: "{{ dummy_list | intersect(dummy_list2) }}"  ------> 1,20,40,50
+    - 
+      debug:
+        msg: "{{ 100 | random }}"
+    - 
+      debug:
+        msg: "{{ '/etc/ansible/ansible.cfg' | basename }}"
+    - 
+      debug:
+        msg: "Hello {{ your_name | replace('Gaurav','Saurav') }}"        
+
+
+*--------------------------------------------------------------------------------------------------------------        
