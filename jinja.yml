@@ -7,7 +7,7 @@ In a Jinja2 template file, you will find the following tags:
 
 {{# … #}} : for comments (describe the task)
 
----
+
 
 {{ variable | default(10) }}
 {{ age | default(omit) }}
@@ -17,7 +17,7 @@ In a Jinja2 template file, you will find the following tags:
 
 >-----------------------------------------------------------------------------------------------
 
----
+
   name: this is our first play.
   hosts: webserver1
   vars: 

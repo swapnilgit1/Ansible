@@ -1,4 +1,5 @@
----
+>
+
 - name: testing the uptime and ram usage
   hosts: db, web
   become: true
@@ -17,9 +18,6 @@
 
 
 
-
----
-
 >custom facts_ (o/p must be jason format)
 
 #!/bin/bash
@@ -34,7 +32,6 @@ EOF
 
 
 
----
 - name: debug module
   hosts: deploy
   tasks: 
@@ -49,7 +46,7 @@ EOF
   - debug:   
      var: version.stdout_lines 
 
----
+
 - name: debug module
   hosts: deploy
   tasks:
@@ -68,7 +65,6 @@ EOF
      var: version.stdout_lines
 
 
----
 - name: debug module
   hosts: deploy
   tasks:
@@ -77,7 +73,7 @@ EOF
       msg: "hostname : {{inventory_hostname}}"
 
 
----
+
 - name: debug module
   hosts: deploy
   tasks:
@@ -86,7 +82,7 @@ EOF
       var: inventory_hostname 
 
 
----
+
 - name: prompt vars
   hosts: deploy
   vars: 
@@ -108,9 +104,8 @@ EOF
       - "the password values is: {{password}}"
 
 
+*vars_files
 
-
----
 - name: prompt vars
   hosts: deploy
   vars_files: 
@@ -119,7 +114,7 @@ EOF
    - debug: 
       msg: 
       - "the x values is: {{x}}"
-      - "the x values is: {{7}}"
+      - "the x values is: {{y}}"
 
 >test_var.yml
 x: 3434
@@ -127,7 +122,7 @@ y: 2534
 
 
 
----
+
 - name: paybook
   hosts: deploy
   tasks: 
@@ -136,14 +131,14 @@ y: 2534
       - "the x values is: {{x}}" 
       - "the x values is: {{y}}"  
 
----
-ansible-playbook -i invetory play5.yml -e "x=34 y=4234"
-ansible-playbook -i invetory play5.yml --extra-var "x=34"
+
+>ansible-playbook -i invetory play5.yml -e "x=34 y=4234"
+>ansible-playbook -i invetory play5.yml --extra-var "x=34"
 
 
 >var.yml
 x: 43
-y:
+y:          #array
  - 4
  - 5                     #passing the variable file via command
  - "ansible"
@@ -151,15 +146,16 @@ pkg:
  "linux": "httpd"
  "ubuntu": "apache2" 
 
-*ansible-playbook -i inventory play5.yml -e "@var.yml"
+>ansible-playbook -i inventory play5.yml -e "@var.yml"
 
 
----
+
+
 - name: install any package
   hosts: db
   gather_facts: false
   become: true 
-  tasks:: 
+  tasks:
   - name: install/uninstall {{pkg}}
     apt: 
       name: "{{pkg}}"
@@ -169,9 +165,9 @@ pkg:
 
 
 
+*rescu_Block
 
->rescu_Block
----
+>without block
 - name: rescu_Block
   hosts: deploy 
   become: true
@@ -200,9 +196,8 @@ pkg:
 
 
 
+>with rescu block_
 
-
----
 - name: rescu_Block
   hosts: deploy 
   become: true
@@ -229,10 +224,11 @@ pkg:
     - debug: 
         var: pwd_file2.stdout_lines        
 
-  - ignore_errors: true      
+  - ignore_errors: true      #at block level
 
 >------------------------------------------------------------------------------------
----
+>block_2
+
 - name: installing packages
   hosts: db, web
   become: true
@@ -274,8 +270,8 @@ pkg:
 
 >------------------------------------------------------------------------------------
 
+>multiple blocks
 
----
 - name: installing packages
   hosts: db, web
   become: true
@@ -323,12 +319,13 @@ pkg:
 >------------------------------------------------------------------------------------
 
 
----
+
 - name: installing packages
   hosts: db, web
   become: true
   gather_facts: true
   tasks: 
+
   - block:
     - name: installing tree 
       apt:                           # if this task failed, only then rescu block will execute
@@ -341,7 +338,8 @@ pkg:
         msg: "not a valid package"
 
 
----
+
+
 - name: installing packages
   hosts: db, web
   become: true
@@ -365,8 +363,8 @@ pkg:
 
 >------------------------------------------------------------------------------------
 
-*ref_ https://docs.ansible.com/ansible/2.9/modules/list_of_cloud_modules.html
-*ref_ https://docs.ansible.com/ansible/2.9/modules/ec2_module.html#ec2-module
+*ref_https://docs.ansible.com/ansible/2.9/modules/list_of_cloud_modules.html
+*ref_https://docs.ansible.com/ansible/2.9/modules/ec2_module.html#ec2-module
 
 
 
@@ -377,7 +375,7 @@ pkg:
 2. we need aws iam account programmatic access credentials (aws configure)
 3. or else we can provide access details in playbook directaly 
 
----
+
 - name: aws ec2
   hosts: localhost
   connection: local   # we do not want any ssh connectivity.
@@ -411,14 +409,13 @@ pkg:
 
 aws_key.yml
 
----
+>---
   aws_access_key : ufhweiubvkvnkwjjhjjk
   aws_secrete_key: ifhweiu79f7eqf79wfhn
 
 
 >aws_ec2.yml
 
----
 - name: aws ec2
   hosts: localhost
   connection: local   # we do not want any ssh connectivity.
@@ -439,8 +436,8 @@ aws_key.yml
         aws_access_key: {{aws_access_key}}
         aws_secrete_key: {{aws_secrete_key}}
 
----
->
+
+
 >encrypting the keys file
 ansible-vault encrypt aws_key.yml
 
@@ -474,7 +471,7 @@ but not if the configuration is unchanged. Ansible uses handlers to address this
 Handlers are tasks that only run when notified.
 
 
----
+
 - name: installing packages
   hosts: db
   become: true
@@ -482,9 +479,9 @@ Handlers are tasks that only run when notified.
   tasks: 
   - name: instaling apache2
     apt : 
-     name: apache2 
-     update_cache: true 
-     state: present
+      name: apache2 
+      update_cache: true 
+      state: present
     notify: test_handler
 
   handlers: 
@@ -494,11 +491,11 @@ Handlers are tasks that only run when notified.
       state: stopped 
 
 
-******************************************************************************************************************
+*************************************************************************************************************
+
+>ASYNCHRONOUS ACTION
 
 
-
----
 - name: installing packages
   hosts: db
   tasks: 
@@ -511,7 +508,7 @@ Handlers are tasks that only run when notified.
     command: touch a.txt
 
 
----
+
 - name: installing packages
   hosts: db
   tasks: 
@@ -522,3 +519,7 @@ Handlers are tasks that only run when notified.
 
   - name: secon task 
     command: touch a.txt
+
+
+
+    *************************************************************************************************************

@@ -1,11 +1,11 @@
----
+
 >
-*all_module_ref_  https://docs.ansible.com/ansible/2.9/modules/list_of_all_modules.html
+*all_module_ref_https://docs.ansible.com/ansible/2.9/modules/list_of_all_modules.html
 
 
 >user_module_to_create_ssh_keys_
 
----
+
 - name: Create a 2048-bit SSH key for user jsmith in ~jsmith/.ssh/id_rsa
   ansible.builtin.user:
     name: jsmith
@@ -14,7 +14,7 @@
     ssh_key_file: .ssh/id_rsa
 
 
----
+
 - name: Add the user 'james' with a bash shell, appending the group 'admins' and 'developers' to the user's groups
   ansible.builtin.user:
     name: james
@@ -22,8 +22,7 @@
     groups: admins,developers
     append: yes
 
----
->    
+    
 >------------------------------------------------
 
 >reboot module to reboot the servers
@@ -46,8 +45,7 @@
     boot_time_command: uptime | cut -d ' ' -f 5
 
 
----
->    
+  
 >------------------------------------------------
 
 >shutting down the nodes_
@@ -64,8 +62,7 @@
     search_paths:
      - '/lib/molly-guard'
 
----
->    
+   
 >------------------------------------------------
 
 >Ansible docker module_
@@ -90,9 +87,9 @@
     push: yes
     source: local
 
----
->    
+ 
 >------------------------------------------------
+
 >Ansible kubernetes module_
 
 *NameSpace
@@ -100,6 +97,7 @@
   k8s:
     state: present 
     defination:
+
       name: testing
       api_version: v1
       kind: Namespace
@@ -111,6 +109,7 @@
   k8s:
     state: present
     definition:
+
       apiVersion: v1
       kind: Service
       metadata:
@@ -129,10 +128,9 @@
           name: port-8000-tcp
           port: 8000
 
----
->    
+
 >------------------------------------------------
->   
+ 
 *ref_https://digitalvarys.com/install-kubernetes-cluster-with-kubeadm-and-ansible-ubuntu/
 *ref_https://buildvirtual.net/deploy-a-kubernetes-cluster-using-ansible/  
 
@@ -150,7 +148,7 @@ worker2 ansible_host=172.31.118.25 ansible_user=root
 
 >2.setting non-root-user.yml
 
----
+
 - hosts: web_1
   become: yes
   tasks:
@@ -174,12 +172,12 @@ worker2 ansible_host=172.31.118.25 ansible_user=root
         key: "{{item}}"
       with_file:
         - ~/.ssh/id_rsa.pub
----
+
 >------------------------------------------------
 
 >generate csv report for aws ec2
 
-we need a ec2 asa master node with role attached for full ec2 access
+we need a ec2 as a master node with role attached for full ec2 access
 
 - name: generate csv file for aws ec2
   hosts: localhost 
@@ -204,12 +202,9 @@ we need a ec2 asa master node with role attached for full ec2 access
 
 {% set s_no = 1 %}                    # varibale
 S.NO,INSTANCE-ID,IMAGE-ID,KEY-NAME    
-{% for each in out.instances %}       # loop , it use out variable declared in playbook, instances is feild in output
+{% for each in out.instances %}       # loop ,it use out variable declared in playbook, instances is feild in output
 {{ s_no }},{{ each.instance_id }},{{ each.image_id }},{{ each.key_name}}     # expression
 {% set s_no = s_no + 1 %}
 {% endfor %}
 
 >-------------------------------------------------------------------------------------------------------------
-
-
-

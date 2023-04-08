@@ -37,7 +37,7 @@
                                       #else it will search at local machine
 
     - name: renaming tomcat home 
-      command:  mv /home/swapnil/download/tomcat/apache-tomcat-9.0.69  /usr/local/latest 
+      command:  mv /home/swapnil/download/tomcat/apache-tomcat-9.0.69  /usr/local/latest_tomcat  #dir
 
     - name: running tomcat 
       shell: nohup /usr/local/latest/bin/startup.sh  #run without closing (nohup) , in background (&)

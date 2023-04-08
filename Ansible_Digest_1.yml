@@ -610,7 +610,6 @@ ansible <group> -i <inv> -m shell -a "init 0" -b
 
 >Ansible Components and Terminology_
 
----
 Inventory :
   server_name
   private ip
@@ -664,11 +663,13 @@ playbook :
 
 Tasks: 
   Name
+  hosts 
+
   become
   become_user
   become_method  
   sudo
-  hosts 
+
   module 
   Async 
   poll 
@@ -694,10 +695,12 @@ Tasks:
   import_roles 
   import_playbook
   
-  with_items / items
-  loop
-  loop_control
-    loop_var
+  items
+  with_items/ loop
+
+  loop                  # loop: "{{variable}}"
+  loop_control          #                         ----> name: "some_var.var_name"
+    loop_var            # loop_var: some_var
 
 
   
@@ -708,6 +711,7 @@ important_modules_ :
   package 
   service
   copy 
+  synchronize
   fetch 
   file
   get_url 
@@ -719,12 +723,10 @@ important_modules_ :
   reboot
   shutdown
   assert
-  synchronize
-
-
+  
 
 ansible_commands :
-  ansible <group> -i <inv> -m <module> -a <args> -b/-k <options/flags>
+  ansible <group/server/ip/RE> -i <inv> -m <module> -a <args> -e <extra_vars> -b/-k <options/flags>
   ansible-inventory  --list/--graph
   ansible-playbook
   ansible-vault
@@ -781,10 +783,9 @@ Ansible_Terminologies :
   roles 
   facts 
 
----
+
 *******************************************************************************************************************
----
->
+
 >Fetching data from csv and ini files_ 
 
 >pass.csv
@@ -792,7 +793,7 @@ var1,12345
 var2,67890
 var3,765834756
 
----
+
 - name: csv1 demo
   hosts: db
   vars:
@@ -802,7 +803,7 @@ var3,765834756
       var: "{{var1}}"
 
 
----
+
 - name: csv demo
   hosts: db
   vars:
@@ -822,7 +823,6 @@ var=12345
 var=987956
 
 
----
 - name: ini demo
   hosts: db
   vars:
@@ -832,11 +832,10 @@ var=987956
     command: touch ./var_ini_{{var1}}
 
 
-*******************************************************************************************************************
----
->
+************************************************************************************************************
+
 >loop Control_
----
+
 - name: loop control 
   hosts: db
   max_fail_percentage: 10
@@ -856,21 +855,19 @@ var=987956
      
 
 
-
----
 - name: loop control
   hosts: db
  # any_error_fatal: true
   vars:
-    pkg:
+    pkg:                      # loop over this variable
       - name: tree
-        sw: tree         # dict-map of the values
+        version: 1.1.2        # dict-map of the values
       - name: wget
-        sw: wget
+        version: 1.5.3
   tasks:
   - name: install
     apt:
-     name: "{{ software.sw }}"
+     name: "{{ software.name }}={{ software.version }}"  # "{{ software.name }}-{{ software.version }}" -- redhat
      state: present
 
     loop: "{{ pkg }}"
@@ -883,7 +880,6 @@ var=987956
 
 
 
----
 - name: create multiple users
   host: web
   vars:
@@ -905,7 +901,7 @@ var=987956
 
 
 *******************************************************************************************************************
----
+
 >
 *delegation_in_Asible
 
@@ -934,6 +930,8 @@ var=987956
                            # task will execute on both machines i.e. db and web1
 
 
+*Local_action
+
 - name: play2
   hosts: db
   tasks: 
@@ -942,7 +940,7 @@ var=987956
       name: telnet
       state: present
 
-  - name: make a blank filr on control node i.e Master node
+  - name: make a blank file on control node i.e Master node
     local_action: 
       module: file 
       path: /home/swapnil/
